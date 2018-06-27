@@ -90,7 +90,17 @@ class Plugin(indigo.PluginBase):
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
         errorsDict = indigo.Dict()
 
-        # FIXME
+        if typeId == 'SensorStats':
+            if len(valuesDict.get('sensors',[])) == 0:
+                if (len(valuesDict.get('thermostats',[]) == 0)) or (not valuesDict.get('therm_state', None)):
+                    errorsDict['sensors'] = errorsDict['thermostats'] = "At least one sensor required."
+        elif typeId in ['SinewaveDummySensor','RandomDummySensor']:
+            for key in (set(valuesDict.keys()) & set('minValue','maxValue','period')):
+                if not validateTextFieldNumber(valuesDict.get(key)):
+                    errorsDict[key] = 'Must be a number'
+            if valuesDict['minValue'] > valuesDict['maxValue']:
+                errorsDict['minValue'] = 'Must be less than Maximum Value'
+                errorsDict['maxValue'] = 'Must be greater than Minimum Value'
 
         if len(errorsDict) > 0:
             self.logger.debug(u"validate device config error: \n{}".format(errorsDict))
@@ -98,18 +108,15 @@ class Plugin(indigo.PluginBase):
         return (True, valuesDict)
 
     #-------------------------------------------------------------------------------
-    # General Action callback
+    # Action Methods
     #-------------------------------------------------------------------------------
-    def actionControlUniversal(self, action, dev):
-        instance = self.deviceDict[dev.id]
-
-        # FIXME
-        pass
-
-        ###### OTHER ACTIONS ######
-        # else:
-        #     self.logger.debug(u'"{}" {} action not available'.format(dev.name, unicode(action.deviceAction)))
-
+    def actionControlSensor(self, action, device):
+        if action.sensorAction == indigo.kUniversalAction.RequestStatus:
+            self.logger.info('"{}" status update'.format(device.name))
+            instance = self.deviceDict[device.id]
+            instance.statusRequest()
+        else:
+            self.logger.debug('"{}" {} request ignored'.format(dev.name, unicode(action.speedControlAction)))
 
     #-------------------------------------------------------------------------------
     # Menu Methods
@@ -150,6 +157,8 @@ class Plugin(indigo.PluginBase):
         if new_dev.pluginId == self.pluginId:
             # device belongs to plugin
             indigo.PluginBase.deviceUpdated(self, old_dev, new_dev)
+            # instance = self.deviceDict[new_dev.id]
+            # instance.selfUpdated(new_dev)
 
         for instance in self.deviceDict.values():
             instance.deviceUpdated(old_dev, new_dev)
@@ -167,8 +176,26 @@ class SensorStats(object):
         self.decimals = int(self.props.get('decimals',1))
         self.units = self.props.get('units','')
         self.display = self.props.get('display','all_mean')
-        self.therm_type = self.props.get('therm_state',None)
+        self.therm_type = self.props.get('therm_type',None)
 
+        self.statusRequest()
+
+    #-------------------------------------------------------------------------------
+    def deviceUpdated(self, old_dev, new_dev):
+        if new_dev.id in self.sensorValues.keys():
+            self.sensorNames[new_dev.id] = new_dev.name
+            if isinstance(new_dev, indigo.SensorDevice):
+                self.sensorValues[new_dev.id] = new_dev.sensorValue
+            elif isinstance(new_dev, indigo.ThermostatDevice):
+                if self.therm_type == 'temperature':
+                    self.sensorValues[new_dev.id] = new_dev.temperatures[0]
+                elif self.therm_type == 'humidity':
+                    self.sensorValues[new_dev.id] = new_dev.humidities[0]
+
+            self.updateInstance()
+
+    #-------------------------------------------------------------------------------
+    def statusRequest(self):
         self.sensorValues = dict()
         self.sensorNames = dict()
         for sid in self.props.get('sensors',[]):
@@ -190,63 +217,55 @@ class SensorStats(object):
                 except IndexError:
                     pass
 
+        self.updateInstance()
+
     #-------------------------------------------------------------------------------
-    def deviceUpdated(self, old_dev, new_dev):
-        if new_dev.id in self.sensorValues.keys():
-            self.sensorNames[new_dev.id] = new_dev.name
-            if isinstance(new_dev, indigo.SensorDevice):
-                self.sensorValues[new_dev.id] = new_dev.sensorValue
-            elif isinstance(new_dev, indigo.ThermostatDevice):
-                if self.therm_type == 'temperature':
-                    self.sensorValues[new_dev.id] = new_dev.temperatures[0]
-                elif self.therm_type == 'humidity':
-                    self.sensorValues[new_dev.id] = new_dev.humidities[0]
+    def updateInstance(self):
+        values = self.sensorValues.values()
+        all_mean = stats.mean(values)
+        all_median = stats.median(values)
+        all_deviation = stats.std(values)
+        max_value = max(values)
+        max_delta = max_value - all_mean
+        max_deviation = max_delta / all_deviation
+        min_value = min(values)
+        min_delta = min_value - all_mean
+        min_deviation = min_delta / all_deviation
+        all_range = max_value - min_value
 
-            values = self.sensorValues.values()
-            all_mean = stats.mean(values)
-            all_median = stats.median(values)
-            all_deviation = stats.std(values)
-            max_value = max(values)
-            max_delta = max_value - all_mean
-            max_deviation = max_delta / all_deviation
-            min_value = min(values)
-            min_delta = min_value - all_mean
-            min_deviation = min_delta / all_deviation
-            all_range = max_value - min_value
+        for sid in self.sensorValues.keys():
+            if self.sensorValues[sid] == max_value:
+                max_id = sid
+                max_name = self.sensorNames[sid]
+                break
+        for sid in self.sensorValues.keys():
+            if self.sensorValues[sid] == min_value:
+                min_id = sid
+                min_name = self.sensorNames[sid]
+                break
 
-            for sid in self.sensorValues.keys():
-                if self.sensorValues[sid] == max_value:
-                    max_id = sid
-                    max_name = self.sensorNames[sid]
-                    break
-            for sid in self.sensorValues.keys():
-                if self.sensorValues[sid] == min_value:
-                    min_id = sid
-                    min_name = self.sensorNames[sid]
-                    break
+        state_list = StateList(self.decimals, self.units)
+        state_list.appendState('all_mean', all_mean)
+        state_list.appendState('all_median', all_median)
+        state_list.appendState('all_deviation', all_deviation, unit=False)
+        state_list.appendState('all_range', all_range)
+        state_list.appendState('max_value', max_value)
+        state_list.appendState('max_delta', max_delta)
+        state_list.appendState('max_deviation', max_deviation, unit=False)
+        state_list.appendState('max_id', max_id, num=False)
+        state_list.appendState('max_name', max_name, num=False)
+        state_list.appendState('min_value', min_value)
+        state_list.appendState('min_delta', min_delta)
+        state_list.appendState('min_deviation', min_deviation, unit=False)
+        state_list.appendState('min_id', min_id, num=False)
+        state_list.appendState('min_name', min_name, num=False)
 
-            state_list = StateList(self.decimals, self.units)
-            state_list.appendState('all_mean', all_mean)
-            state_list.appendState('all_median', all_median)
-            state_list.appendState('all_deviation', all_deviation, unit=False)
-            state_list.appendState('all_range', all_range)
-            state_list.appendState('max_value', max_value)
-            state_list.appendState('max_delta', max_delta)
-            state_list.appendState('max_deviation', max_deviation, unit=False)
-            state_list.appendState('max_id', max_id, num=False)
-            state_list.appendState('max_name', max_name, num=False)
-            state_list.appendState('min_value', min_value)
-            state_list.appendState('min_delta', min_delta)
-            state_list.appendState('min_deviation', min_deviation, unit=False)
-            state_list.appendState('min_id', min_id, num=False)
-            state_list.appendState('min_name', min_name, num=False)
+        for d in state_list:
+            if d['key'] == self.display:
+                state_list.append({'key':'sensorValue', 'value':d['value'], 'uiValue':d.get('uiValue',None), 'decimals':d.get('decimals',None)})
+                break
 
-            for d in state_list:
-                if d['key'] == self.display:
-                    state_list.append({'key':'sensorValue', 'value':d['value'], 'uiValue':d.get('uiValue',None), 'decimals':d.get('decimals',None)})
-                    break
-
-            self.dev.updateStatesOnServer(state_list)
+        self.dev.updateStatesOnServer(state_list)
 
     #-------------------------------------------------------------------------------
     def selfUpdated(self, new_dev):
@@ -283,6 +302,10 @@ class SinewaveDummySensor(object):
         self.dev = new_dev
 
     #-------------------------------------------------------------------------------
+    def statusRequest(self):
+        pass
+
+    #-------------------------------------------------------------------------------
     def tick(self):
         now = time.time()
         if now >= self.last_time + self.frequency:
@@ -304,7 +327,7 @@ class RandomDummySensor(object):
         self.max = float(self.props.get('maxValue',1.0))
         self.frequency = int(self.props.get('frequency',10))
 
-        self.last_time = 0
+        self.last_time = 0.0
 
     #-------------------------------------------------------------------------------
     def deviceUpdated(self, old_dev, new_dev):
@@ -313,6 +336,10 @@ class RandomDummySensor(object):
     #-------------------------------------------------------------------------------
     def selfUpdated(self, new_dev):
         self.dev = new_dev
+
+    #-------------------------------------------------------------------------------
+    def statusRequest(self):
+        pass
 
     #-------------------------------------------------------------------------------
     def tick(self):
@@ -337,9 +364,9 @@ class StateList(list):
         if num and self.decimals:
             d['decimals'] = self.decimals
             if unit and self.units:
-                d['uiValue'] = '{}{}'.format(round(value,self.decimals), self.units)
+                d['uiValue'] = u'{}{}'.format(round(value,self.decimals), self.units)
             else:
-                d['uiValue'] = '{}'.format(round(value,self.decimals))
+                d['uiValue'] = u'{}'.format(round(value,self.decimals))
         return self.append(d)
 
 #-------------------------------------------------------------------------------
