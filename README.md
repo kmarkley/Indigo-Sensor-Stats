@@ -1,19 +1,13 @@
-# Unistat
-This plugin co-opts Indigo thermostat devices as general purpose threshold-response devices.  
+## Sensor Stats
 
-Any numerical device state or variable value can be used as input (analogous to temperature), and devices can be switched on/off or action groups executed in response to the input value crossing a high threshold (analogous to cooling) and or low threshold (analogous to heating).
+Calculates some very basic statistics on a group of sensor values, including mean value, median value, max value, min value, value range, and standard deviation.  
 
-Example uses†:
-* Thermostat
-* Humidistat
-* Lumistat
-* Heliostat
-* Anemostat
-* Pluviostat
-* Acoustistat
-* Hydromistat
-* Salinistat
-* Ampistat
-* Chromostat
+Also compares a single sensor of interest to the group and calculates the variance (to mean), standard deviation, and whether it is currently the maximum or minimum value.
 
-†Some names might be completely fabricated
+## Dummy Sinewave Sensor
+
+Just what it sounds like.
+
+## Dummy Random Sensor
+
+Ditto.

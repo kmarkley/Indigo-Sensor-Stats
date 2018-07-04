@@ -4,25 +4,26 @@
 		<Name>Sensor Stats</Name>
 		<ConfigUI>
 			<Field id='sensors' type='list' rows='8'>
-				<Label>Sensors:</Label>
-				<List class='indigo.devices' filter='indigo.sensor, props.SupportsSensorValue' />
+				<Label>Sensor Group:</Label>
+				<List class='self' method='getSensorDeviceList' filter='list' />
 			</Field>
-			<Field id='therm_type' type='menu'>
-				<Label>Thermostat Value:</Label>
+			<Field id='therm_type' type='menu' defaultValue='temperature'>
+				<Label>Thermostats Use:</Label>
 				<List>
 					<Option value='temperature'>Temperature</Option>
 					<Option value='humidity'>Humidity</Option>
 				</List>
 			</Field>
-			<Field id='thermostats' type='list' rows='8'>
-				<Label>Thermostats:</Label>
-				<List class='indigo.devices' filter='indigo.thermostat' />
+			<Field id='special' type='menu'>
+				<Label>Special Interest:</Label>
+				<List class='self' method='getSensorDeviceList' filter='menu' />
 			</Field>
+			<Field id='miscSeperator' type='separator' />
 			<Field id='units' type='textfield'>
-				<Label>Units:</Label>
+				<Label>UI Units:</Label>
 			</Field>
 			<Field id='decimals' type='menu' defaultValue='1'>
-				<Label>Decimals:</Label>
+				<Label>UI Decimals:</Label>
 				<List>
 					<Option value='0'>0</Option>
 					<Option value='1'>1</Option>
@@ -31,68 +32,71 @@
 					<Option value='4'>4</Option>
 				</List>
 			</Field>
-			<Field id='display' type='menu' defaultValue='all_mean'>
-				<Label>Display:</Label>
+			<Field id='display' type='menu' defaultValue='all_avg'>
+				<Label>UI Display:</Label>
 				<List>
-					<Option value='all_mean'>Arithmetic Mean</Option>
-					<Option value='all_median'>Median Value</Option>
-					<Option value='all_range'>Value Range</Option>
-					<Option value='all_deviation'>Standard Deviation</Option>
-					<Option value='max_value'>Maximum Value</Option>
-					<Option value='max_delta'>Maximum Delta</Option>
-					<Option value='max_deviation'>Maximum Deviations</Option>
-					<Option value='min_value'>Minimum Value</Option>
-					<Option value='min_delta'>Minimum Delta</Option>
-					<Option value='min_deviation'>Minimum Deviations</Option>
+					<Option value='all_avg'>Arithmetic Mean</Option>
+					<Option value='all_med'>Median Value</Option>
+					<Option value='all_rng'>Value Range</Option>
+					<Option value='all_dev'>Standard Deviation</Option>
+					<Option value='max_val'>Maximum Value</Option>
+					<Option value='max_var'>Maximum Variance</Option>
+					<Option value='max_dev'>Maximum Deviations</Option>
+					<Option value='min_val'>Minimum Value</Option>
+					<Option value='min_var'>Minimum Variance</Option>
+					<Option value='min_dev'>Minimum Deviations</Option>
+					<Option value='spc_val'>Special Value</Option>
+					<Option value='spc_var'>Special Variance</Option>
+					<Option value='spc_dev'>Special Deviations</Option>
 				</List>
 			</Field>
 			<Field id='SupportsSensorValue' type='checkbox' defaultValue='true' hidden='true' />
 			<Field id='SupportsOnState' type='checkbox' defaultValue='false' hidden='true' />
 		</ConfigUI>
 		<States>
-			<State id='all_mean'>
+			<State id='all_avg'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Mean Value</TriggerLabel>
                 <TriggerLabelPrefix>Mean Value is</TriggerLabelPrefix>
                 <ControlPageLabel>Mean Value</ControlPageLabel>
                 <ControlPageLabelPrefix>Mean Value is</ControlPageLabelPrefix>
 			</State>
-			<State id='all_median'>
+			<State id='all_med'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Median Value</TriggerLabel>
                 <TriggerLabelPrefix>Median Value is</TriggerLabelPrefix>
                 <ControlPageLabel>Median Value</ControlPageLabel>
                 <ControlPageLabelPrefix>Median Value is</ControlPageLabelPrefix>
 			</State>
-			<State id='all_deviation'>
+			<State id='all_dev'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Standard Deviation</TriggerLabel>
                 <TriggerLabelPrefix>Standard Deviation is</TriggerLabelPrefix>
                 <ControlPageLabel>Standard Deviation</ControlPageLabel>
                 <ControlPageLabelPrefix>Standard Deviation is</ControlPageLabelPrefix>
 			</State>
-			<State id='all_range'>
+			<State id='all_rng'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Value Range</TriggerLabel>
                 <TriggerLabelPrefix>Value Range is</TriggerLabelPrefix>
                 <ControlPageLabel>Value Range</ControlPageLabel>
                 <ControlPageLabelPrefix>Value Range is</ControlPageLabelPrefix>
 			</State>
-			<State id='max_value'>
+			<State id='max_val'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Maximum Value</TriggerLabel>
                 <TriggerLabelPrefix>Maximum Value is</TriggerLabelPrefix>
                 <ControlPageLabel>Maximum Value</ControlPageLabel>
                 <ControlPageLabelPrefix>Maximum Value is</ControlPageLabelPrefix>
 			</State>
-			<State id='max_delta'>
+			<State id='max_var'>
 				<ValueType>Number</ValueType>
-				<TriggerLabel>Max to Mean</TriggerLabel>
-                <TriggerLabelPrefix>Max to Mean is</TriggerLabelPrefix>
-                <ControlPageLabel>Max to Mean</ControlPageLabel>
-                <ControlPageLabelPrefix>Max to Mean is</ControlPageLabelPrefix>
+				<TriggerLabel>Max Variance</TriggerLabel>
+                <TriggerLabelPrefix>Max Variance is</TriggerLabelPrefix>
+                <ControlPageLabel>Max Variance</ControlPageLabel>
+                <ControlPageLabelPrefix>Max Variance is</ControlPageLabelPrefix>
 			</State>
-			<State id='max_deviation'>
+			<State id='max_dev'>
 				<ValueType>Number</ValueType>``
 				<TriggerLabel>Max Standard Deviations</TriggerLabel>
                 <TriggerLabelPrefix>Max Standard Deviations are</TriggerLabelPrefix>
@@ -113,21 +117,21 @@
                 <ControlPageLabel>Max Sensor ID</ControlPageLabel>
                 <ControlPageLabelPrefix>Max Sensor ID is</ControlPageLabelPrefix>
 			</State>
-			<State id='min_value'>
+			<State id='min_val'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Min Value</TriggerLabel>
                 <TriggerLabelPrefix>Min Value is</TriggerLabelPrefix>
                 <ControlPageLabel>Min Value</ControlPageLabel>
                 <ControlPageLabelPrefix>Min Value is</ControlPageLabelPrefix>
 			</State>
-			<State id='min_delta'>
+			<State id='min_var'>
 				<ValueType>Number</ValueType>
-				<TriggerLabel>Min to Mean</TriggerLabel>
-                <TriggerLabelPrefix>Min to Mean is</TriggerLabelPrefix>
-                <ControlPageLabel>Min to Mean</ControlPageLabel>
-                <ControlPageLabelPrefix>Min to Mean is</ControlPageLabelPrefix>
+				<TriggerLabel>Min Variance</TriggerLabel>
+                <TriggerLabelPrefix>Min Variance is</TriggerLabelPrefix>
+                <ControlPageLabel>Min Variance</ControlPageLabel>
+                <ControlPageLabelPrefix>Min Variance is</ControlPageLabelPrefix>
 			</State>
-			<State id='min_deviation'>
+			<State id='min_dev'>
 				<ValueType>Number</ValueType>
 				<TriggerLabel>Min Standard Deviations</TriggerLabel>
                 <TriggerLabelPrefix>Min Standard Deviations are</TriggerLabelPrefix>
@@ -147,6 +151,41 @@
                 <TriggerLabelPrefix>Min Sensor ID is</TriggerLabelPrefix>
                 <ControlPageLabel>Min Sensor ID</ControlPageLabel>
                 <ControlPageLabelPrefix>Min Sensor ID is</ControlPageLabelPrefix>
+			</State>
+			<State id='spc_val'>
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Sensor of Interest Value</TriggerLabel>
+                <TriggerLabelPrefix>Sensor of Interest Value is</TriggerLabelPrefix>
+                <ControlPageLabel>Sensor of Interest Value</ControlPageLabel>
+                <ControlPageLabelPrefix>Sensor of Interest Value is</ControlPageLabelPrefix>
+			</State>
+			<State id='spc_var'>
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Sensor of Interest Variance</TriggerLabel>
+                <TriggerLabelPrefix>Sensor of Interest Variance is</TriggerLabelPrefix>
+                <ControlPageLabel>Sensor of Interest Variance</ControlPageLabel>
+                <ControlPageLabelPrefix>Sensor of Interest Variance is</ControlPageLabelPrefix>
+			</State>
+			<State id='spc_dev'>
+				<ValueType>Number</ValueType>
+				<TriggerLabel>Max Sensor of Interest Deviations</TriggerLabel>
+                <TriggerLabelPrefix>Sensor of Interest Standard Deviations are</TriggerLabelPrefix>
+                <ControlPageLabel>Sensor of Interest Standard Deviations</ControlPageLabel>
+                <ControlPageLabelPrefix>Sensor of Interest Standard Deviations are</ControlPageLabelPrefix>
+			</State>
+			<State id='spc_max'>
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Max Sensor of Interest is Maximum</TriggerLabel>
+                <TriggerLabelPrefix>Sensor of Interest is Maximum</TriggerLabelPrefix>
+                <ControlPageLabel>Sensor of Interest is Maximum</ControlPageLabel>
+                <ControlPageLabelPrefix>Sensor of Interest is Maximum</ControlPageLabelPrefix>
+			</State>
+			<State id='spc_min'>
+				<ValueType>Boolean</ValueType>
+				<TriggerLabel>Max Sensor of Interest is Minimum</TriggerLabel>
+                <TriggerLabelPrefix>Sensor of Interest is Minimum</TriggerLabelPrefix>
+                <ControlPageLabel>Sensor of Interest is Minimum</ControlPageLabel>
+                <ControlPageLabelPrefix>Sensor of Interest is Minimum</ControlPageLabelPrefix>
 			</State>
 		</States>
 	</Device>
