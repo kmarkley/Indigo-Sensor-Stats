@@ -256,10 +256,10 @@ class SensorStats(object):
         all_dev = float(stats.std(values))
         max_val = max(values)
         max_var = max_val - all_avg
-        max_dev = max_var / all_dev
+        max_dev = max_var / all_dev if all_dev else 0
         min_val = min(values)
         min_var = min_val - all_avg
-        min_dev = min_var / all_dev
+        min_dev = min_var / all_dev if all_dev else 0
         all_rng = max_val - min_val
 
         for sid in self.sensor_values.keys():
@@ -278,7 +278,7 @@ class SensorStats(object):
         else:
             spc_val = all_avg
         spc_var = spc_val - all_avg
-        spc_dev = spc_var / all_dev
+        spc_dev = spc_var / all_dev if all_dev else 0
         spc_max = spc_val >= max_val
         spc_min = spc_val <= min_val
 
