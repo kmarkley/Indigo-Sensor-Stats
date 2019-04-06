@@ -6,7 +6,6 @@
 
 import indigo
 import time
-from ghpu import GitHubPluginUpdater
 import math
 import random
 import numpy as stats
@@ -17,8 +16,6 @@ import numpy as stats
 ################################################################################
 # Globals
 
-k_updateCheckHours = 24
-
 ################################################################################
 class Plugin(indigo.PluginBase):
 
@@ -26,13 +23,10 @@ class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
         super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
 
-        self.updater = GitHubPluginUpdater(self)
-
     #-------------------------------------------------------------------------------
     # Start, Stop and Config changes
     #-------------------------------------------------------------------------------
     def startup(self):
-        self.nextCheck = self.pluginPrefs.get('nextUpdateCheck',0)
         self.debug = self.pluginPrefs.get("showDebugInfo",False)
         self.logger.debug(u"startup")
         if self.debug:
@@ -44,7 +38,6 @@ class Plugin(indigo.PluginBase):
     #-------------------------------------------------------------------------------
     def shutdown(self):
         self.logger.debug(u"shutdown")
-        self.pluginPrefs['nextUpdateCheck'] = self.nextCheck
         self.pluginPrefs['showDebugInfo'] = self.debug
 
     #-------------------------------------------------------------------------------
@@ -61,8 +54,6 @@ class Plugin(indigo.PluginBase):
             while True:
                 for instance in self.deviceDict.values():
                     instance.tick()
-                if time.time() > self.nextCheck:
-                    self.checkForUpdates()
                 self.sleep(1)
         except self.StopThread:
             pass
@@ -136,27 +127,6 @@ class Plugin(indigo.PluginBase):
 
     #-------------------------------------------------------------------------------
     # Menu Methods
-    #-------------------------------------------------------------------------------
-    def checkForUpdates(self):
-        try:
-            self.updater.checkForUpdate()
-        except Exception as e:
-            msg = u"Check for update error.  Next attempt in {} hours.".format(k_updateCheckHours)
-            if self.debug:
-                self.logger.exception(msg)
-            else:
-                self.logger.error(msg)
-                self.logger.debug(e)
-        self.nextCheck = time.time() + k_updateCheckHours*60*60
-
-    #-------------------------------------------------------------------------------
-    def updatePlugin(self):
-        self.updater.update()
-
-    #-------------------------------------------------------------------------------
-    def forceUpdate(self):
-        self.updater.update(currentVersion='0.0.0')
-
     #-------------------------------------------------------------------------------
     def toggleDebug(self):
         if self.debug:
