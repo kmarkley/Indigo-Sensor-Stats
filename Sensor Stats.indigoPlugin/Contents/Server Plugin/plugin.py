@@ -62,7 +62,7 @@ class Plugin(indigo.PluginBase):
     # Device Methods
     #-------------------------------------------------------------------------------
     def deviceStartComm(self, dev):
-        self.logger.debug(u"deviceStartComm: {}".format(dev.name))
+        self.logger.debug(f"deviceStartComm: {dev.name}")
         if dev.configured:
             if dev.deviceTypeId == 'SensorStats':
                 self.deviceDict[dev.id] = SensorStats(dev, self.logger)
@@ -73,7 +73,7 @@ class Plugin(indigo.PluginBase):
 
     #-------------------------------------------------------------------------------
     def deviceStopComm(self, dev):
-        self.logger.debug(u"deviceStopComm: {}".format(dev.name))
+        self.logger.debug(f"deviceStopComm: {dev.name}")
         if dev.id in self.deviceDict:
             del self.deviceDict[dev.id]
 
@@ -95,7 +95,7 @@ class Plugin(indigo.PluginBase):
                                 elif valuesDict['therm_type'] == 'humidity':
                                     value = sensor.humidities[0]
                             except IndexError:
-                                errorsDict['sensors'] = "Selected thermostat doesn't support {} value.".format(valuesDict['therm_type'])
+                                errorsDict['sensors'] = f"Selected thermostat doesn't support {valuesDict['therm_type']} value."
                     except:
                         sensors = valuesDict['sensors']
                         sensors.remove(sensor_id)
@@ -110,7 +110,7 @@ class Plugin(indigo.PluginBase):
                 errorsDict['maxValue'] = 'Must be greater than Minimum Value'
 
         if len(errorsDict) > 0:
-            self.logger.debug(u"validate device config error: \n{}".format(errorsDict))
+            self.logger.debug(f"validate device config error: \n{errorsDict}")
             return (False, valuesDict, errorsDict)
         return (True, valuesDict)
 
@@ -119,11 +119,11 @@ class Plugin(indigo.PluginBase):
     #-------------------------------------------------------------------------------
     def actionControlSensor(self, action, device):
         if action.sensorAction == indigo.kUniversalAction.RequestStatus:
-            self.logger.info('"{}" status update'.format(device.name))
+            self.logger.info(f'"{device.name}" status update')
             instance = self.deviceDict[device.id]
             instance.statusRequest()
         else:
-            self.logger.debug('"{}" {} request ignored'.format(dev.name, unicode(action.speedControlAction)))
+            self.logger.debug(f'"{dev.name}" {str(action.speedControlAction)} request ignored')
 
     #-------------------------------------------------------------------------------
     # Menu Methods
@@ -143,8 +143,6 @@ class Plugin(indigo.PluginBase):
         if new_dev.pluginId == self.pluginId:
             # device belongs to plugin
             indigo.PluginBase.deviceUpdated(self, old_dev, new_dev)
-            # instance = self.deviceDict[new_dev.id]
-            # instance.selfUpdated(new_dev)
 
         for instance in self.deviceDict.values():
             instance.deviceUpdated(old_dev, new_dev)
@@ -220,7 +218,7 @@ class SensorStats(object):
 
     #-------------------------------------------------------------------------------
     def updateInstance(self):
-        values = self.sensor_values.values()
+        values = list(self.sensor_values.values())
         all_avg = float(stats.mean(values))
         all_med = float(stats.median(values))
         all_dev = float(stats.std(values))
@@ -281,10 +279,6 @@ class SensorStats(object):
         self.dev.updateStatesOnServer(state_list)
 
     #-------------------------------------------------------------------------------
-    def selfUpdated(self, new_dev):
-        self.dev = new_dev
-
-    #-------------------------------------------------------------------------------
     def tick(self):
         pass
 
@@ -314,9 +308,9 @@ class StateList(list):
         if num and (self.decimals is not None):
             d['decimals'] = self.decimals
             if unit and self.units:
-                d['uiValue'] = u'{}{}'.format(round(value,self.decimals), self.units)
+                d['uiValue'] = f'{round(value,self.decimals)}{self.units}'
             else:
-                d['uiValue'] = u'{}'.format(round(value,self.decimals))
+                d['uiValue'] = f'{round(value,self.decimals)}'
         return self.append(d)
 
 ###############################################################################
@@ -340,10 +334,6 @@ class SinewaveDummySensor(object):
     #-------------------------------------------------------------------------------
     def deviceUpdated(self, old_dev, new_dev):
         pass
-
-    #-------------------------------------------------------------------------------
-    def selfUpdated(self, new_dev):
-        self.dev = new_dev
 
     #-------------------------------------------------------------------------------
     def statusRequest(self):
@@ -376,10 +366,6 @@ class RandomDummySensor(object):
     #-------------------------------------------------------------------------------
     def deviceUpdated(self, old_dev, new_dev):
         pass
-
-    #-------------------------------------------------------------------------------
-    def selfUpdated(self, new_dev):
-        self.dev = new_dev
 
     #-------------------------------------------------------------------------------
     def statusRequest(self):
