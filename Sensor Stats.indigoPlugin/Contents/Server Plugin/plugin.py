@@ -123,7 +123,7 @@ class Plugin(indigo.PluginBase):
             instance = self.deviceDict[device.id]
             instance.statusRequest()
         else:
-            self.logger.debug(f'"{dev.name}" {str(action.speedControlAction)} request ignored')
+            self.logger.debug(f'"{device.name}" {str(action.speedControlAction)} request ignored')
 
     #-------------------------------------------------------------------------------
     # Menu Methods
